@@ -21,4 +21,17 @@ for basename in [
              tee=test.verbose,
              verilator_run=True)
 
+# Exercise --debugi alone and check that the requested logging level takes effect.
+for level in (0, 2, 9):
+    logfile = test.obj_dir + '/debugi_' + str(level) + '.log'
+    test.run(cmd=[os.environ['VERILATOR_ROOT'] + '/bin/verilator_coverage',
+                  't/t_vlcov_data_a.dat', '--debugi', str(level)],
+             logfile=logfile,
+             tee=test.verbose,
+             verilator_run=True)
+    if level:
+        test.file_grep(logfile, r'readCoverage t/t_vlcov_data_a.dat')
+    else:
+        test.file_grep_not(logfile, r'readCoverage')
+
 test.passes()

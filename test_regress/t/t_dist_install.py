@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import shlex
 
 test.scenarios('dist')
 
@@ -25,6 +26,19 @@ print("Install...")
 test.run(
     cmd=["cd " + test.root + " && " + os.environ["MAKE"] + " DESTDIR=" + destdir + " install-all"],
     check_finished=False)
+
+# The wrapper's debug fallback must not hide a missing optimized executable.
+for name in ('verilator_coverage_bin', 'verilator_coverage_bin_dbg'):
+    installed = [os.path.join(directory, filename)
+                 for directory, _, filenames in os.walk(destdir)
+                 for filename in filenames if filename in (name, name + '.exe')]
+    if not installed:
+        test.error('Missing installed coverage executable: ' + name)
+    for filename in installed:
+        if not os.access(filename, os.X_OK):
+            test.error('Installed coverage executable is not executable: ' + filename)
+        test.run(cmd=[shlex.quote(filename), '--version'], tee=test.verbose,
+                 verilator_run=True)
 
 # Check we can run a test
 # Unfortunately the prefix was hardcoded in the exec at a different place,
